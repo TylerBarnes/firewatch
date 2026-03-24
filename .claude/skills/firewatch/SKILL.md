@@ -1,6 +1,6 @@
 ---
 name: firewatch
-description: Query GitHub PR activity using the Firewatch CLI (fw). Fetch, cache, filter, and act on PR comments, reviews, commits, and CI status. Outputs JSONL for jq composition. Use when checking PR status, finding review comments, querying activity, resolving feedback, or working with GitHub pull requests.
+description: Query GitHub PR activity using the Firewatch CLI (fw). Fetch, cache, filter, and act on PR comments, reviews, commits, and CI status. Query commands output JSONL for jq composition, while `fw list` and `fw view` provide readable text output. Use when checking PR status, finding review comments, querying activity, resolving feedback, or working with GitHub pull requests.
 user-invocable: true
 metadata:
   author: outfitter-dev
@@ -22,9 +22,14 @@ fw --type comment | jq 'select(.author != .pr_author)'  # External feedback only
 
 ## Core Concepts
 
-### JSONL Output
+### JSONL Query Output
 
-Firewatch outputs one JSON object per line. Each entry is **denormalized** — it contains full PR context (title, state, author, labels) so you never need joins.
+`fw` / `fw query` output one JSON object per line. Each entry is **denormalized** — it contains full PR context (title, state, author, labels) so you never need joins.
+
+For readable non-JSON output, use:
+
+- `fw list` for opinionated text listings of feedback or PRs
+- `fw view <id>` for human-readable details on a PR or comment/thread
 
 ```bash
 fw --type comment --limit 1
@@ -84,6 +89,17 @@ Per-PR summary instead of individual entries:
 
 ```bash
 fw --summary --open
+```
+
+### Readable Text Views
+
+Use the non-JSON commands when you want a built-in readable view instead of shaping JSONL yourself:
+
+```bash
+fw list --pr 42         # Text list of feedback for a PR
+fw list prs --open      # Text list of PRs
+fw view 42              # Human-readable PR detail
+fw view @a7f3c          # Human-readable comment/thread detail
 ```
 
 ### Composing with jq
@@ -262,9 +278,10 @@ For detailed Graphite workflows (querying stacks, cross-PR fixes, commit pattern
 
 ## Agent Tips
 
-1. **CLI filters first, then jq** — More efficient than jq-only filtering
-2. **Denormalized = no joins** — Each entry has full PR context
-3. **Entry IDs for actions** — Use `id` field (or short `@xxxxx`) with `fw reply` and `fw close`
-4. **Auto-sync handles freshness** — Queries auto-sync when cache is stale; use `fw sync` to force
-5. **Check `.graphite` for stacks** — Null if not in a Graphite stack
-6. **File provenance for cross-PR fixes** — See [graphite/cross-pr-fixes.md](graphite/cross-pr-fixes.md)
+1. **Use the right surface** — `fw` / `fw query` for JSONL, `fw list` / `fw view` for readable text output
+2. **CLI filters first, then jq** — More efficient than jq-only filtering
+3. **Denormalized = no joins** — Each entry has full PR context
+4. **Entry IDs for actions** — Use `id` field (or short `@xxxxx`) with `fw reply` and `fw close`
+5. **Auto-sync handles freshness** — Queries auto-sync when cache is stale; use `fw sync` to force
+6. **Check `.graphite` for stacks** — Null if not in a Graphite stack
+7. **File provenance for cross-PR fixes** — See [graphite/cross-pr-fixes.md](graphite/cross-pr-fixes.md)
