@@ -14,11 +14,38 @@ Query, filter, and act on GitHub PR activity using the Firewatch CLI (`fw`).
 ## Quick Start
 
 ```bash
-fw --summary --open              # See what needs attention (auto-syncs if stale)
-fw sync                          # Force a fresh sync
-fw --type comment --pr 42       # Comments on PR #42
-fw --type comment | jq 'select(.author != .pr_author)'  # External feedback only
+fw status                        # Check auth/cache/repo setup on first use
+fw view 42                       # Readable PR overview
+fw list --pr 42                  # Readable feedback list for a PR
+fw --type comment --pr 42       # Structured comment query for jq filtering
 ```
+
+## First-Time Use
+
+If this is the first Firewatch use in a repo or session, prefer this sequence:
+
+1. `fw status` — confirm auth, cache, and repo detection
+2. `fw view <pr>` — get a readable PR-level check-in
+3. `fw list --pr <pr>` — enumerate feedback on that PR
+4. `fw --pr <pr> --type comment | jq ...` — only when you need custom filtering or extraction
+
+See [patterns/first-time-use.md](patterns/first-time-use.md) for the goal-oriented workflow.
+See [patterns/check-in-on-review.md](patterns/check-in-on-review.md) for broad PR review status questions.
+
+Safe defaults:
+
+- prefer `--pr <number>` over `--mine` / `--reviews` until config is known-good
+- prefer `fw view` for “check in on the review” requests
+- prefer one `fw` command at a time while getting oriented
+
+Avoid on first use unless you know config/setup is ready:
+
+- `--mine` and `--reviews` without `user.github_username`
+- chaining multiple `fw` queries in a single shell command
+- running multiple `fw` commands in parallel against the same cache/database
+- treating Firewatch as the canonical live CI or PR metadata dashboard
+
+Firewatch uses a local SQLite cache, so concurrent reads/writes can occasionally surface `database is locked`. Prefer serialized `fw` calls: run `fw sync` first if needed, then query one command at a time.
 
 ## When to Use Firewatch
 
@@ -121,6 +148,16 @@ fw view 42              # Human-readable PR detail
 fw view @a7f3c          # Human-readable comment/thread detail
 ```
 
+Rule of thumb:
+
+- `fw view <pr>` for a quick review check-in
+- `fw list --pr <pr>` to enumerate feedback items
+- `fw fb --current` when the user wants feedback for the currently checked out branch's PR
+- `fw` / `fw query` when you need custom filtering or extraction
+
+See [patterns/check-current-pr.md](patterns/check-current-pr.md) for the current-PR workflow.
+See [patterns/current-stack-feedback.md](patterns/current-stack-feedback.md) for Graphite stack-wide feedback triage.
+
 ### Composing with jq
 
 CLI filters handle common cases; jq handles everything else:
@@ -142,6 +179,9 @@ fw | jq -s 'group_by(.type) | map({type: .[0].type, count: length})'
 **Tip:** Use CLI filters first, then jq. CLI filters are faster because they skip JSON parsing for non-matching entries.
 
 See [references/jq-cookbook.md](references/jq-cookbook.md) for more patterns.
+
+For prioritization guidance, see [patterns/triage-feedback.md](patterns/triage-feedback.md).
+For changes-requested reviews, see [patterns/handle-changes-requested.md](patterns/handle-changes-requested.md).
 
 ## Taking Action
 
@@ -165,11 +205,25 @@ fw reply @a7f3c "Fixed in latest commit"
 fw reply @a7f3c "Done" --resolve
 ```
 
+See [patterns/reply-to-comments.md](patterns/reply-to-comments.md) for the standalone reply workflow.
+See [patterns/reply-and-resolve.md](patterns/reply-and-resolve.md) for decision rules on when to reply, resolve directly, or do both.
+See [patterns/find-comment-by-id.md](patterns/find-comment-by-id.md) when the user gives a specific comment or thread ID.
+See [patterns/find-unresolved-comments.md](patterns/find-unresolved-comments.md) when the user wants open threads or likely still-actionable comments.
+
 ### Resolve Without Replying
 
 ```bash
 fw close @a7f3c
 ```
+
+### Acknowledge Without Replying
+
+```bash
+fw ack @a7f3c
+fw ack 42 --yes
+```
+
+See [patterns/acknowledge-feedback.md](patterns/acknowledge-feedback.md) for when to use ack instead of reply/resolve.
 
 Resolve multiple threads:
 
@@ -284,9 +338,26 @@ For detailed Graphite workflows (querying stacks, cross-PR fixes, commit pattern
 
 ## Patterns
 
+Goal-oriented workflows:
+
+- [patterns/first-time-use.md](patterns/first-time-use.md) — Safe defaults for first use in a repo or session
+- [patterns/check-in-on-review.md](patterns/check-in-on-review.md) — Answer broad PR review status questions
+- [patterns/check-current-pr.md](patterns/check-current-pr.md) — Pull feedback for the currently checked out branch's PR
+- [patterns/triage-feedback.md](patterns/triage-feedback.md) — Prioritize what needs attention on a PR
+- [patterns/handle-changes-requested.md](patterns/handle-changes-requested.md) — Work through blocking review feedback cleanly
+- [patterns/find-unresolved-comments.md](patterns/find-unresolved-comments.md) — Find open threads or likely still-actionable review comments
+- [patterns/reply-to-comments.md](patterns/reply-to-comments.md) — Respond to review comments or PR discussion comments cleanly
+- [patterns/reply-and-resolve.md](patterns/reply-and-resolve.md) — Choose between reply, resolve, and reply+resolve
+- [patterns/acknowledge-feedback.md](patterns/acknowledge-feedback.md) — Mark feedback as seen without replying yet
+- [patterns/current-stack-feedback.md](patterns/current-stack-feedback.md) — Review and prioritize feedback across the current stack
+- [patterns/find-comment-by-id.md](patterns/find-comment-by-id.md) — Inspect and act on a single comment or thread ID
+- [patterns/bulk-cleanup.md](patterns/bulk-cleanup.md) — Close, reply to, or acknowledge many items after a fix pass
+
+Broader workflows:
+
 - [patterns/daily-standup.md](patterns/daily-standup.md) — Morning PR review workflow
 - [patterns/implementing-feedback.md](patterns/implementing-feedback.md) — Systematic feedback resolution
-- [patterns/resolving-threads.md](patterns/resolving-threads.md) — Reply and resolve patterns
+- [patterns/resolving-threads.md](patterns/resolving-threads.md) — Detailed thread resolution patterns
 
 ## References
 
