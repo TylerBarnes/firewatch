@@ -147,7 +147,7 @@ fw query --type comment --pr 123 | jq -r 'select(.file == "src/index.ts") | .id'
 
 ```bash
 # PR numbers for gh
-fw status --active | jq -r '.pr'
+fw --summary --open | jq -r '.pr'
 
 # URLs for browser
 fw query | jq -r '.url' | head -1 | xargs open

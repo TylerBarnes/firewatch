@@ -54,7 +54,7 @@ Every entry includes full PR context for jq queries without joins.
 
 ### File Activity Tracking
 
-Populated by `fw check`. Shows if file was modified after the comment.
+Populated during sync. Shows if file was modified after the comment.
 
 | Field                                       | Type    | Description                            |
 | ------------------------------------------- | ------- | -------------------------------------- |

@@ -151,7 +151,7 @@ npm run lint
 ### Check File Was Modified
 
 ```bash
-fw --refresh
+fw sync
 fw --type comment --pr PR_NUMBER | jq 'select(.file == "TARGET_FILE") | {
   file,
   addressed: .file_activity_after.modified,
@@ -166,7 +166,7 @@ After implementing, acknowledge and resolve. See [resolving-threads.md](resolvin
 Quick resolution:
 
 ```bash
-fw add PR_NUMBER "Fixed -- <brief description>" --reply COMMENT_ID --resolve
+fw reply COMMENT_ID "Fixed -- <brief description>" --resolve
 ```
 
 ## Handling Special Cases
@@ -181,7 +181,7 @@ If you disagree with the feedback:
 4. Escalate to user if needed
 
 ```bash
-fw add PR_NUMBER "I kept this as-is because... Let me know if you'd still like me to change it." --reply COMMENT_ID
+fw reply COMMENT_ID "I kept this as-is because... Let me know if you'd still like me to change it."
 ```
 
 ### When Clarification Is Needed
@@ -189,7 +189,7 @@ fw add PR_NUMBER "I kept this as-is because... Let me know if you'd still like m
 Ask before implementing:
 
 ```bash
-fw add PR_NUMBER "Could you clarify what you mean by X? I want to make sure I address this correctly." --reply COMMENT_ID
+fw reply COMMENT_ID "Could you clarify what you mean by X? I want to make sure I address this correctly."
 ```
 
 ### When Multiple Comments Are Related
@@ -245,7 +245,7 @@ fw close ID1 ID2 ID3
 After addressing all feedback:
 
 ```bash
-fw --refresh
+fw sync
 fw --type comment --pr PR_NUMBER | jq -s '{
   total: length,
   addressed: [.[] | select(.file_activity_after.modified == true)] | length,

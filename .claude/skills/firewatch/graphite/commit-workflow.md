@@ -117,7 +117,7 @@ If conflicts persist:
 Always re-sync Firewatch to update staleness tracking:
 
 ```bash
-fw --refresh
+fw sync
 ```
 
 Then verify addressed comments:

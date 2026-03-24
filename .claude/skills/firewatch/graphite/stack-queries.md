@@ -7,7 +7,7 @@ How to query PR activity in Graphite stacks.
 When syncing in a repo with Graphite stacks, entries include stack metadata automatically:
 
 ```bash
-fw --refresh
+fw sync
 ```
 
 ### Stack Fields
@@ -229,7 +229,7 @@ Start with the lowest stack position to avoid restack conflicts.
 
 ## Tips
 
-- **Always refresh first:** `fw --refresh`
+- **Always sync first:** `fw sync`
 - **Address base PRs first:** Lower positions affect everything above
 - **Check provenance:** Comments may need fixes in a different PR
 - **Use jq slurp (`-s`):** For aggregations and grouping

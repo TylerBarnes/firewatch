@@ -105,7 +105,7 @@ gt submit --stack
 ### Step 7: Sync and Verify
 
 ```bash
-fw --refresh
+fw sync
 ```
 
 ### Step 8: Resolve the Original Comment
@@ -113,7 +113,7 @@ fw --refresh
 The comment lives on the higher PR, so resolve it there:
 
 ```bash
-fw add ORIGINAL_PR "Fixed in PR #ORIGIN_PR, propagated via restack" --reply COMMENT_ID --resolve
+fw reply COMMENT_ID "Fixed in PR #ORIGIN_PR, propagated via restack" --resolve
 ```
 
 ## Complete Example
@@ -146,10 +146,10 @@ gt restack
 gt submit --stack
 
 # 7. Sync and verify
-fw --refresh
+fw sync
 
 # 8. Resolve comment on original PR
-fw add 103 "Fixed in base PR #101, propagated via restack" --reply IC_xyz --resolve
+fw reply IC_xyz "Fixed in base PR #101, propagated via restack" --resolve
 ```
 
 ## Edge Cases
@@ -179,7 +179,7 @@ If `file_provenance` is null:
 
 - The file may have been introduced before stack tracking
 - The file may not be in a Graphite stack
-- Try re-syncing: `fw --refresh`
+- Try re-syncing: `fw sync`
 
 ### Reviewer Wants Fix in Place
 
@@ -208,6 +208,6 @@ For each cross-PR comment:
 5. [ ] Run `gt restack` to propagate
 6. [ ] Handle any conflicts
 7. [ ] Run `gt submit --stack`
-8. [ ] Sync: `fw --refresh`
+8. [ ] Sync: `fw sync`
 9. [ ] Resolve comment on original PR, mentioning fix location
 10. [ ] Verify fix appears in all relevant PRs

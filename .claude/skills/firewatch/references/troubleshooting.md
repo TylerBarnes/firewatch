@@ -140,13 +140,12 @@ Quick view of cache state and recent sync info.
 1. Force fresh sync:
 
    ```bash
-   fw --refresh full
+   fw sync --full
    ```
 
 2. Clear cache and re-sync:
    ```bash
-   rm -rf ~/.cache/firewatch/repos/*
-   fw --refresh
+   fw sync --clear
    ```
 
 ## Query Issues
@@ -189,12 +188,12 @@ Quick view of cache state and recent sync info.
 For Graphite metadata:
 
 - Ensure you're in a repo with Graphite stacks (`gt state`)
-- Re-sync: `fw --refresh`
+- Re-sync: `fw sync`
 
 For file activity:
 
 - This field is populated based on commit activity after the comment
-- Re-sync to update: `fw --refresh`
+- Re-sync to update: `fw sync`
 
 ### jq Parse Errors
 
@@ -242,7 +241,7 @@ For file activity:
 
 3. Re-sync and try again:
    ```bash
-   fw --refresh
+   fw sync
    ```
 
 ### "Cannot resolve"
@@ -285,7 +284,7 @@ For file activity:
 2. Re-sync (Graphite metadata is auto-detected):
 
    ```bash
-   fw --refresh
+   fw sync
    ```
 
 3. Verify PR is in a Graphite stack:
@@ -307,7 +306,7 @@ For file activity:
 
 2. Re-sync with fresh data:
    ```bash
-   fw --refresh full
+   fw sync --full
    ```
 
 ### Restack Conflicts
@@ -356,8 +355,7 @@ rm -rf ~/.cache/firewatch/repos/*
 
 ```bash
 # Clear and rebuild
-rm -rf ~/.cache/firewatch/
-fw --refresh
+fw sync --clear
 ```
 
 ## Configuration Issues

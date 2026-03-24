@@ -9,7 +9,7 @@ How to reply to review comments and resolve threads after addressing feedback.
 Acknowledge what was done and resolve in one command:
 
 ```bash
-fw add PR_NUMBER "Fixed" --reply COMMENT_ID --resolve
+fw reply COMMENT_ID "Fixed" --resolve
 ```
 
 ### 2. Reply Only
@@ -17,7 +17,7 @@ fw add PR_NUMBER "Fixed" --reply COMMENT_ID --resolve
 When you want feedback before resolving:
 
 ```bash
-fw add PR_NUMBER "I made this change, let me know if it looks right" --reply COMMENT_ID
+fw reply COMMENT_ID "I made this change, let me know if it looks right"
 ```
 
 ### 3. Resolve Without Reply
@@ -54,20 +54,20 @@ Keep replies brief but informative:
 
 ## When to Use Each Method
 
-### Use Reply + Resolve When:
+### Use Reply + Resolve When (`fw reply <id> "text" --resolve`):
 
 - You made a code change
 - The fix might not be obvious
 - You want to document what changed
 - The reviewer asked a question you answered with code
 
-### Use Resolve Only When:
+### Use Resolve Only When (`fw close <id>`):
 
 - Fix is trivially obvious from the commit
 - Comment was already addressed before you saw it
 - Multiple comments addressed by same change
 
-### Use Reply Only (No Resolve) When:
+### Use Reply Only When (`fw reply <id> "text"`):
 
 - You need clarification before fully addressing
 - You disagree and want discussion
@@ -97,7 +97,7 @@ fw --type comment --pr PR_NUMBER | jq -r '
 After making changes:
 
 ```bash
-fw --refresh
+fw sync
 fw --type comment --pr PR_NUMBER | jq -r '
   select(
     .subtype == "review_comment" and
@@ -118,7 +118,7 @@ IDS=$(fw --type comment --pr PR_NUMBER | jq -r '
 
 # Reply to each, then resolve all
 for id in $IDS; do
-  fw add PR_NUMBER "Fixed" --reply $id
+  fw reply $id "Fixed"
 done
 fw close $IDS
 ```
@@ -130,7 +130,7 @@ fw close $IDS
 After resolving, sync and verify:
 
 ```bash
-fw --refresh
+fw sync
 fw --type comment --pr PR_NUMBER | jq '{
   file,
   line,
@@ -179,7 +179,7 @@ If `fw close` fails:
 1. Verify the comment ID is correct
 2. Check you have write access to the repo
 3. Ensure the comment is a review thread (not issue comment)
-4. Try `fw --refresh` and retry
+4. Try `fw sync` and retry
 
 ## Agent Checklist
 
@@ -189,7 +189,7 @@ When resolving threads:
 2. [ ] Choose appropriate method (reply+resolve vs resolve-only)
 3. [ ] Write concise, informative reply
 4. [ ] Use bulk resolve when appropriate
-5. [ ] Verify with `fw --refresh` after resolving
+5. [ ] Verify with `fw sync` after resolving
 6. [ ] Check remaining count matches expectations
 
 ## Complete Example
@@ -203,17 +203,17 @@ fw --type comment --pr 42 | jq 'select(
 
 # 2. Make fixes...
 
-# 3. Refresh to track changes
-fw --refresh
+# 3. Sync to track changes
+fw sync
 
 # 4. Reply and resolve addressed comments
-fw add 42 "Fixed -- added error handling" --reply IC_abc --resolve
-fw add 42 "Done -- renamed for clarity" --reply IC_def --resolve
+fw reply IC_abc "Fixed -- added error handling" --resolve
+fw reply IC_def "Done -- renamed for clarity" --resolve
 
 # 5. Bulk resolve any remaining trivial fixes
 fw close IC_ghi IC_jkl
 
 # 6. Verify
-fw --refresh
+fw sync
 fw --type comment --pr 42 | jq -s 'length'
 ```

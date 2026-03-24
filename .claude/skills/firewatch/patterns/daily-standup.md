@@ -5,7 +5,7 @@ Morning routine to check what needs attention across all PRs.
 ## Quick Command
 
 ```bash
-fw --refresh --summary --open
+fw sync && fw --summary --open
 ```
 
 ## Full Workflow
@@ -13,10 +13,10 @@ fw --refresh --summary --open
 ### Step 1: Sync Fresh Data
 
 ```bash
-fw --refresh
+fw sync
 ```
 
-This fetches the latest activity from GitHub. Graphite metadata is automatically enriched when available.
+This fetches the latest activity from GitHub. Graphite metadata is automatically enriched when available. Note: queries auto-sync when cache is stale, so explicit sync is optional.
 
 ### Step 2: Get Quick Overview
 
@@ -110,13 +110,13 @@ Based on the overview:
 ## One-Liner Summary
 
 ```bash
-fw --refresh --summary --open && fw status --short
+fw sync && fw --summary --open && fw status --short
 ```
 
 ## Agent Workflow
 
 ```
-1. fw --refresh
+1. fw sync
 2. fw --summary --open --> identify priority items
 3. fw status --short --> see all PR states
 4. For each priority item:
@@ -149,6 +149,6 @@ The `--short` flag shows:
 ## Tips
 
 - Run this workflow at the start of each coding session
-- Set up a shell alias: `alias standup='fw --refresh --summary --open'`
+- Set up a shell alias: `alias standup='fw sync && fw --summary --open'`
 - Use `fw --since 24h` to focus on very recent activity
 - Filter to your PRs with `--mine` or to review queue with `--reviews`

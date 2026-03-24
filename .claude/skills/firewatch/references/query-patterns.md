@@ -253,7 +253,7 @@ fw --type comment --pr 42 | jq -r '
 ### Get PR for gh Commands
 
 ```bash
-fw --summary --active | jq -r '.pr' | xargs -I {} gh pr view {}
+fw --summary --open | jq -r '.pr' | xargs -I {} gh pr view {}
 ```
 
 ### Open URLs in Browser

@@ -14,7 +14,8 @@ Query, filter, and act on GitHub PR activity using the Firewatch CLI (`fw`).
 ## Quick Start
 
 ```bash
-fw --refresh --summary --open    # Sync and see what needs attention
+fw --summary --open              # See what needs attention (auto-syncs if stale)
+fw sync                          # Force a fresh sync
 fw --type comment --pr 42       # Comments on PR #42
 fw --type comment | jq 'select(.author != .pr_author)'  # External feedback only
 ```
@@ -66,8 +67,7 @@ fw --type comment              # By type
 fw --since 24h                 # By time (30s, 5m, 24h, 7d, 2w, 1mo)
 fw --pr 42                    # By PR number
 fw --author alice              # By author
-fw --open                      # Open PRs only
-fw --active                    # Open or draft PRs
+fw --open                      # Open PRs (includes drafts)
 fw --mine                      # PRs assigned to me
 fw --reviews                   # PRs I need to review
 ```
@@ -113,44 +113,38 @@ See [references/jq-cookbook.md](references/jq-cookbook.md) for more patterns.
 ### Post a Comment
 
 ```bash
-fw add 42 "LGTM, merging!"
+fw comment 42 "LGTM, merging!"
 ```
 
 ### Reply to a Review Comment
 
-Every comment entry has an `id` field:
+Every comment entry has an `id` field (full ID or short `@xxxxx`):
 
 ```bash
-fw add 42 "Fixed in latest commit" --reply IC_kwDOK...
+fw reply @a7f3c "Fixed in latest commit"
 ```
 
 ### Reply and Resolve
 
 ```bash
-fw add 42 "Done" --reply IC_kwDOK... --resolve
+fw reply @a7f3c "Done" --resolve
 ```
 
 ### Resolve Without Replying
 
 ```bash
-fw close IC_kwDOK...
+fw close @a7f3c
 ```
 
 Resolve multiple threads:
 
 ```bash
-fw close IC_abc IC_def IC_ghi
+fw close @a7f3c @b8d2e @c9e1f
 ```
 
 ## Staleness Tracking
 
-Review comments can become stale when the file is modified. Run `fw check` to populate staleness data:
-
-```bash
-fw check
-```
-
-Then query for unaddressed comments:
+Review comments include staleness data populated during sync. Query for unaddressed comments:
 
 ```bash
 fw --type comment | jq 'select(.file_activity_after.modified == false)'
@@ -167,7 +161,7 @@ The `file_activity_after` field shows:
 Firewatch integrates with Graphite for stack-aware queries. When syncing in a repo with Graphite stacks, entries include stack metadata:
 
 ```bash
-fw --refresh   # Auto-detects Graphite stacks
+fw sync   # Syncs and auto-detects Graphite stacks
 ```
 
 ### Stack Fields
@@ -211,40 +205,47 @@ For detailed Graphite workflows (querying stacks, cross-PR fixes, commit pattern
 
 ## Command Reference
 
-| Command              | Purpose                                    |
-| -------------------- | ------------------------------------------ |
-| `fw [options]`       | Query cached entries (auto-syncs if stale) |
-| `fw --refresh`       | Force sync before query                    |
-| `fw --summary`       | Aggregate into per-PR summaries            |
-| `fw add <pr> [body]` | Post a comment or add metadata             |
-| `fw close <id>...`   | Resolve review threads                     |
-| `fw check`           | Refresh staleness hints                    |
-| `fw status`          | Firewatch state info                       |
-| `fw doctor`          | Diagnose auth/cache/repo issues            |
-| `fw schema <type>`   | Print JSON schema                          |
+| Command                        | Purpose                                    |
+| ------------------------------ | ------------------------------------------ |
+| `fw [options]`                 | Query cached entries (auto-syncs if stale) |
+| `fw query [options]`           | Same as above (explicit subcommand)        |
+| `fw sync`                      | Force sync (incremental or `--full`)       |
+| `fw list`                      | List unaddressed feedback                  |
+| `fw list prs`                  | List PRs                                   |
+| `fw view <id>`                 | View PR or comment details                 |
+| `fw comment <pr> <body>`       | Post a PR-level comment                    |
+| `fw reply <id> <body>`         | Reply to a review comment                  |
+| `fw close <id>...`             | Resolve review threads                     |
+| `fw ack <id>...`               | Acknowledge feedback (local tracking)      |
+| `fw approve <pr>`              | Approve PR                                 |
+| `fw reject <pr>`               | Request changes on PR                      |
+| `fw edit <id>`                 | Edit PR or comment                         |
+| `fw status`                    | Firewatch state info                       |
+| `fw doctor`                    | Diagnose auth/cache/repo issues            |
+| `fw schema <type>`             | Print JSON schema                          |
 
 ### Query Options
 
-| Option               | Description                 |
-| -------------------- | --------------------------- |
-| `--type <type>`      | Filter by entry type        |
-| `--since <duration>` | Time filter (24h, 7d, etc.) |
-| `--pr <numbers>`     | Filter by PR number(s)      |
-| `--author <name>`    | Filter by author            |
-| `--open`             | Open PRs only               |
-| `--active`           | Open or draft PRs           |
-| `--mine`             | PRs assigned to me          |
-| `--reviews`          | PRs I need to review        |
-| `--summary`          | Aggregate to per-PR summary |
+| Option               | Description                             |
+| -------------------- | --------------------------------------- |
+| `--type <type>`      | Filter by entry type                    |
+| `--since <duration>` | Time filter (24h, 7d, etc.)             |
+| `--pr <numbers>`     | Filter by PR number(s)                  |
+| `--author <name>`    | Filter by author                        |
+| `--open`             | Open PRs only (includes drafts)         |
+| `--ready`            | Ready PRs (open, non-draft)             |
+| `--mine`             | PRs assigned to me                      |
+| `--reviews`          | PRs I need to review                    |
+| `--summary`          | Aggregate to per-PR summary             |
+| `--no-sync`          | Skip auto-sync; use cache only          |
+| `--sync-full`        | Force a full sync before query          |
 
-### Add Options
+### Reply Options
 
-| Option            | Description                                    |
-| ----------------- | ---------------------------------------------- |
-| `--reply <id>`    | Reply to a specific comment                    |
-| `--resolve`       | Resolve the thread after posting               |
-| `--review <type>` | Add review (approve, request-changes, comment) |
-| `--label <name>`  | Add label (repeatable)                         |
+| Option       | Description                      |
+| ------------ | -------------------------------- |
+| `--resolve`  | Resolve the thread after posting |
+| `--body <t>` | Reply text (alt to positional)   |
 
 ## Patterns
 
@@ -263,7 +264,7 @@ For detailed Graphite workflows (querying stacks, cross-PR fixes, commit pattern
 
 1. **CLI filters first, then jq** — More efficient than jq-only filtering
 2. **Denormalized = no joins** — Each entry has full PR context
-3. **Entry IDs for actions** — Use `id` field with `--reply` and `fw close`
-4. **Run `fw check` for staleness** — Populates `file_activity_after` field
+3. **Entry IDs for actions** — Use `id` field (or short `@xxxxx`) with `fw reply` and `fw close`
+4. **Auto-sync handles freshness** — Queries auto-sync when cache is stale; use `fw sync` to force
 5. **Check `.graphite` for stacks** — Null if not in a Graphite stack
 6. **File provenance for cross-PR fixes** — See [graphite/cross-pr-fixes.md](graphite/cross-pr-fixes.md)
