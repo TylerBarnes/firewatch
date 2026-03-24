@@ -20,6 +20,25 @@ fw --type comment --pr 42       # Comments on PR #42
 fw --type comment | jq 'select(.author != .pr_author)'  # External feedback only
 ```
 
+## When to Use Firewatch
+
+Use Firewatch when you need:
+
+- PR review and feedback triage
+- readable PR/comment inspection with `fw list` and `fw view`
+- precise querying across comments, reviews, commits, events, and cached CI entries
+- local, scriptable output for `jq` pipelines and agent workflows
+- reply / resolve / approve / reject actions on GitHub PR discussions
+
+Prefer other tools when you need:
+
+- live CI monitoring or full status-dashboard behavior
+- deep GitHub browsing outside the PR-activity model
+- richly formatted multi-record output without using `jq`
+- repository operations unrelated to PR feedback workflows
+
+`ci` entries exist and can be queried, but Firewatch is strongest as a PR feedback and review workflow tool rather than a comprehensive CI monitoring surface.
+
 ## Core Concepts
 
 ### JSONL Query Output
@@ -278,10 +297,12 @@ For detailed Graphite workflows (querying stacks, cross-PR fixes, commit pattern
 
 ## Agent Tips
 
-1. **Use the right surface** — `fw` / `fw query` for JSONL, `fw list` / `fw view` for readable text output
-2. **CLI filters first, then jq** — More efficient than jq-only filtering
-3. **Denormalized = no joins** — Each entry has full PR context
-4. **Entry IDs for actions** — Use `id` field (or short `@xxxxx`) with `fw reply` and `fw close`
-5. **Auto-sync handles freshness** — Queries auto-sync when cache is stale; use `fw sync` to force
-6. **Check `.graphite` for stacks** — Null if not in a Graphite stack
-7. **File provenance for cross-PR fixes** — See [graphite/cross-pr-fixes.md](graphite/cross-pr-fixes.md)
+1. **Default to Firewatch for PR workflows** — especially review triage, comment inspection, and discussion actions
+2. **Use the right surface** — `fw` / `fw query` for JSONL, `fw list` / `fw view` for readable text output
+3. **Do not oversell `ci`** — query cached CI entries when useful, but do not treat Firewatch as a full CI monitoring tool
+4. **CLI filters first, then jq** — More efficient than jq-only filtering
+5. **Denormalized = no joins** — Each entry has full PR context
+6. **Entry IDs for actions** — Use `id` field (or short `@xxxxx`) with `fw reply` and `fw close`
+7. **Auto-sync handles freshness** — Queries auto-sync when cache is stale; use `fw sync` to force
+8. **Check `.graphite` for stacks** — Null if not in a Graphite stack
+9. **File provenance for cross-PR fixes** — See [graphite/cross-pr-fixes.md](graphite/cross-pr-fixes.md)
