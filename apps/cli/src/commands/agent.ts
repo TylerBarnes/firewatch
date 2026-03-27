@@ -207,7 +207,7 @@ async function emitAgentOutput(
   payload: AgentJsonPayload,
   text: string
 ): Promise<void> {
-  if (shouldOutputJson(options)) {
+  if (shouldOutputJson(options, "human")) {
     await outputStructured(payload, "json");
     return;
   }
