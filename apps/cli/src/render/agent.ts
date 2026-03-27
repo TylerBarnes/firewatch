@@ -39,9 +39,18 @@ export function formatAgentCursorHeader(options?: {
   previousCursor?: string | null | undefined;
   activeCursor?: string | null | undefined;
   isReplay?: boolean | undefined;
+  isPeek?: boolean | undefined;
 }): string {
   if (options?.isReplay) {
     return `Showing updates since cursor '${options.activeCursor ?? ""}'.`;
+  }
+
+  if (options?.isPeek) {
+    if (!options.previousCursor) {
+      return "Peek mode: showing all updates for this command (no stored cursor yet).";
+    }
+
+    return `Peek mode: showing updates since the last stored cursor without advancing it. To replay from that point later, run again with --cursor '${options.previousCursor}'.`;
   }
 
   if (!options?.previousCursor) {

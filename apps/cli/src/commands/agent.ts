@@ -9,7 +9,7 @@ import {
   setCursor,
   type FirewatchEntry,
 } from "@outfitter/firewatch-core";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 
 import { ensureRepoCache } from "../query-helpers";
 import {
@@ -18,13 +18,32 @@ import {
   formatAgentCursorHeader,
   formatAgentStatus,
 } from "../render/agent";
+import { outputStructured } from "../utils/json";
+import { shouldOutputJson } from "../utils/tty";
 
 interface AgentCommonOptions {
   cursor?: string;
+  peek?: boolean;
+  jsonl?: boolean;
+  json?: boolean;
 }
 
 interface AgentCiOptions extends AgentCommonOptions {
   check?: string;
+}
+
+interface AgentJsonPayload {
+  repo: string;
+  pr: number;
+  branch: string;
+  command: string;
+  cursor: {
+    active: string | null;
+    previous: string | null;
+    replay: boolean;
+    peek: boolean;
+  };
+  output: unknown;
 }
 
 const AGENT_STATUS_COMMAND = "view-status";
@@ -151,6 +170,51 @@ function latestEntry(entries: FirewatchEntry[]): FirewatchEntry | null {
   })[entries.length - 1] ?? null;
 }
 
+function maybeAdvanceCursor(
+  options: AgentCommonOptions,
+  ctx: Awaited<ReturnType<typeof createAgentContext>>,
+  command: string,
+  latest: FirewatchEntry | null
+): void {
+  if (options.peek) {
+    return;
+  }
+
+  setCursor(
+    ctx.db,
+    ctx.cursorKey,
+    command,
+    latest?.id ?? null,
+    latest?.created_at ?? new Date().toISOString()
+  );
+}
+
+function buildCursorState(
+  options: AgentCommonOptions,
+  entries: FirewatchEntry[],
+  latest: FirewatchEntry | null
+) {
+  return {
+    active: options.cursor ?? null,
+    previous: getReplayCursor(entries, latest),
+    replay: Boolean(options.cursor),
+    peek: Boolean(options.peek),
+  };
+}
+
+async function emitAgentOutput(
+  options: AgentCommonOptions,
+  payload: AgentJsonPayload,
+  text: string
+): Promise<void> {
+  if (shouldOutputJson(options)) {
+    await outputStructured(payload, "json");
+    return;
+  }
+
+  console.log(text);
+}
+
 async function handleViewComments(options: AgentCommonOptions): Promise<void> {
   const ctx = await createAgentContext(AGENT_COMMENTS_COMMAND, options.cursor);
   const entries = await queryEntries({
@@ -163,23 +227,32 @@ async function handleViewComments(options: AgentCommonOptions): Promise<void> {
 
   const freshEntries = filterEntriesSinceCursor(entries, ctx.effectiveCursor);
   const latest = latestEntry(entries);
-  console.log(
-    formatAgentCursorHeader({
-      previousCursor: getReplayCursor(entries, latest),
-      activeCursor: options.cursor ?? null,
-      isReplay: Boolean(options.cursor),
-    })
-  );
-  console.log("");
-  console.log(formatAgentComments(freshEntries, ctx.repo));
+  const cursor = buildCursorState(options, entries, latest);
+  const header = formatAgentCursorHeader({
+    previousCursor: cursor.previous,
+    activeCursor: cursor.active,
+    isReplay: cursor.replay,
+    isPeek: cursor.peek,
+  });
+  const body = formatAgentComments(freshEntries, ctx.repo);
 
-  setCursor(
-    ctx.db,
-    ctx.cursorKey,
-    AGENT_COMMENTS_COMMAND,
-    latest?.id ?? null,
-    latest?.created_at ?? new Date().toISOString()
+  await emitAgentOutput(
+    options,
+    {
+      repo: ctx.repo,
+      pr: ctx.pr,
+      branch: ctx.branch,
+      command: AGENT_COMMENTS_COMMAND,
+      cursor,
+      output: {
+        header,
+        entries: freshEntries,
+      },
+    },
+    `${header}\n\n${body}`
   );
+
+  maybeAdvanceCursor(options, ctx, AGENT_COMMENTS_COMMAND, latest);
 }
 
 async function handleViewCi(options: AgentCiOptions): Promise<void> {
@@ -194,23 +267,33 @@ async function handleViewCi(options: AgentCiOptions): Promise<void> {
 
   const freshEntries = filterEntriesSinceCursor(entries, ctx.effectiveCursor);
   const latest = latestEntry(entries);
-  console.log(
-    formatAgentCursorHeader({
-      previousCursor: getReplayCursor(entries, latest),
-      activeCursor: options.cursor ?? null,
-      isReplay: Boolean(options.cursor),
-    })
-  );
-  console.log("");
-  console.log(formatAgentCi(freshEntries, { check: options.check }));
+  const cursor = buildCursorState(options, entries, latest);
+  const header = formatAgentCursorHeader({
+    previousCursor: cursor.previous,
+    activeCursor: cursor.active,
+    isReplay: cursor.replay,
+    isPeek: cursor.peek,
+  });
+  const body = formatAgentCi(freshEntries, { check: options.check });
 
-  setCursor(
-    ctx.db,
-    ctx.cursorKey,
-    AGENT_CI_COMMAND,
-    latest?.id ?? null,
-    latest?.created_at ?? new Date().toISOString()
+  await emitAgentOutput(
+    options,
+    {
+      repo: ctx.repo,
+      pr: ctx.pr,
+      branch: ctx.branch,
+      command: AGENT_CI_COMMAND,
+      cursor,
+      output: {
+        header,
+        check: options.check ?? null,
+        entries: freshEntries,
+      },
+    },
+    `${header}\n\n${body}`
   );
+
+  maybeAdvanceCursor(options, ctx, AGENT_CI_COMMAND, latest);
 }
 
 async function handleViewStatus(options: AgentCommonOptions): Promise<void> {
@@ -244,53 +327,80 @@ async function handleViewStatus(options: AgentCommonOptions): Promise<void> {
     }
   }
 
-  console.log(
-    formatAgentStatus({
+  const counts = {
+    comments: entries.filter((entry) => entry.type === "comment").length,
+    reviews: entries.filter((entry) => entry.type === "review").length,
+    commits: entries.filter((entry) => entry.type === "commit").length,
+    ci: entries.filter((entry) => entry.type === "ci").length,
+  };
+  const hasCi = entries.some((entry) => entry.type === "ci");
+  const cursor = buildCursorState(options, entries, latest);
+  const body = formatAgentStatus({
+    pr: ctx.pr,
+    title: prEntry.pr_title,
+    state: prEntry.pr_state,
+    author: prEntry.pr_author,
+    branch: prEntry.pr_branch,
+    labels: prEntry.pr_labels ?? [],
+    reviewers,
+    counts,
+    lastActivityAt: latest?.created_at,
+    previousCursor: cursor.previous,
+    currentCursor,
+    newCommentCount: freshCommentEntries.length,
+    hasCi,
+  });
+
+  await emitAgentOutput(
+    options,
+    {
+      repo: ctx.repo,
       pr: ctx.pr,
-      title: prEntry.pr_title,
-      state: prEntry.pr_state,
-      author: prEntry.pr_author,
-      branch: prEntry.pr_branch,
-      labels: prEntry.pr_labels ?? [],
-      reviewers,
-      counts: {
-        comments: entries.filter((entry) => entry.type === "comment").length,
-        reviews: entries.filter((entry) => entry.type === "review").length,
-        commits: entries.filter((entry) => entry.type === "commit").length,
-        ci: entries.filter((entry) => entry.type === "ci").length,
+      branch: ctx.branch,
+      command: AGENT_STATUS_COMMAND,
+      cursor,
+      output: {
+        currentCursor,
+        counts,
+        hasCi,
+        newCommentCount: freshCommentEntries.length,
+        reviewers: [...reviewers.entries()].map(([reviewer, state]) => ({ reviewer, state })),
+        title: prEntry.pr_title,
+        state: prEntry.pr_state,
+        author: prEntry.pr_author,
+        branch: prEntry.pr_branch,
+        labels: prEntry.pr_labels ?? [],
+        lastActivityAt: latest?.created_at ?? null,
       },
-      lastActivityAt: latest?.created_at,
-      previousCursor: getReplayCursor(entries, latest),
-      currentCursor,
-      newCommentCount: freshCommentEntries.length,
-      hasCi: entries.some((entry) => entry.type === "ci"),
-    })
+    },
+    body
   );
 
-  setCursor(
-    ctx.db,
-    ctx.cursorKey,
-    AGENT_STATUS_COMMAND,
-    latest?.id ?? null,
-    latest?.created_at ?? new Date().toISOString()
-  );
+  maybeAdvanceCursor(options, ctx, AGENT_STATUS_COMMAND, latest);
 }
 
-const viewCommentsSubcommand = new Command("view-comments")
-  .description("View new comments for the current branch PR")
-  .option("--cursor <cursor>", "Replay from an earlier cursor")
-  .action(handleViewComments);
+function applyAgentCommonOptions<T extends Command>(command: T): T {
+  return command
+    .option("--cursor <cursor>", "Replay from an earlier cursor")
+    .option("--peek", "Show updates without advancing the stored cursor")
+    .option("--jsonl", "Force structured JSONL output")
+    .option("--no-jsonl", "Force human-readable output")
+    .addOption(new Option("--json").hideHelp());
+}
 
-const viewCiSubcommand = new Command("view-ci")
-  .description("View CI status for the current branch PR")
-  .option("--cursor <cursor>", "Replay from an earlier cursor")
-  .option("--check <name>", "Show details for one check")
-  .action(handleViewCi);
+const viewCommentsSubcommand = applyAgentCommonOptions(
+  new Command("view-comments").description("View new comments for the current branch PR")
+).action(handleViewComments);
 
-const viewStatusSubcommand = new Command("view-status")
-  .description("View status summary for the current branch PR")
-  .option("--cursor <cursor>", "Replay from an earlier cursor")
-  .action(handleViewStatus);
+const viewCiSubcommand = applyAgentCommonOptions(
+  new Command("view-ci")
+    .description("View CI status for the current branch PR")
+    .option("--check <name>", "Show details for one check")
+).action(handleViewCi);
+
+const viewStatusSubcommand = applyAgentCommonOptions(
+  new Command("view-status").description("View status summary for the current branch PR")
+).action(handleViewStatus);
 
 export const agentCommand = new Command("agent")
   .description("Agent-optimized commands with cursor tracking")
