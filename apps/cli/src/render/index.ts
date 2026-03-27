@@ -49,6 +49,8 @@ export {
   type CategoryStyle,
 } from "./theme";
 
+export { formatAgentCi, formatAgentComments, formatAgentCursorHeader, formatAgentStatus } from "./agent";
+
 // Styled components
 export {
   formatCategoryHeader,

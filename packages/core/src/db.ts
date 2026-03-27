@@ -11,7 +11,7 @@ import { Database } from "bun:sqlite";
  * Current schema version.
  * Increment this when making schema changes and add migration logic.
  */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 /**
  * Opens a SQLite database with optimal settings for Firewatch.
@@ -130,6 +130,14 @@ CREATE TABLE IF NOT EXISTS sync_meta (
   pr_count_closed INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS agent_cursors (
+  cursor_key TEXT NOT NULL,
+  command TEXT NOT NULL,
+  last_entry_id TEXT,
+  last_read_at TEXT NOT NULL,
+  PRIMARY KEY (cursor_key, command)
+);
+
 -- Performance indexes
 CREATE INDEX IF NOT EXISTS idx_entries_repo_pr ON entries(repo, pr);
 CREATE INDEX IF NOT EXISTS idx_entries_type ON entries(type);
@@ -229,6 +237,20 @@ export function migrateSchema(db: Database, targetVersion: number): void {
         WHERE last_sync_open IS NULL AND last_sync_closed IS NULL
       `);
       version = 5;
+    }
+
+    // Migration 5 -> 6: Add agent cursor persistence for incremental agent reads
+    if (version === 5 && targetVersion >= 6) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS agent_cursors (
+          cursor_key TEXT NOT NULL,
+          command TEXT NOT NULL,
+          last_entry_id TEXT,
+          last_read_at TEXT NOT NULL,
+          PRIMARY KEY (cursor_key, command)
+        )
+      `);
+      version = 6;
     }
 
     setSchemaVersion(db, version);

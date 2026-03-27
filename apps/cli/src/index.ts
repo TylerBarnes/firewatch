@@ -2,6 +2,7 @@ import { Command, Option } from "commander";
 
 import { version } from "../package.json";
 import { ackCommand } from "./commands/ack";
+import { agentCommand } from "./commands/agent";
 import { approveCommand } from "./commands/approve";
 import { claudePluginCommand } from "./commands/claude-plugin";
 import {
@@ -131,6 +132,7 @@ Query options on root 'fw' are supported but 'fw query' is preferred.`
 
 program.addCommand(queryCommand);
 program.addCommand(syncCommand);
+program.addCommand(agentCommand);
 program.addCommand(editCommand);
 program.addCommand(ackCommand);
 program.addCommand(closeCommand);

@@ -48,6 +48,14 @@ export {
   openDatabase,
 } from "./db";
 
+// Agent cursors
+export {
+  buildCursorKey,
+  getCursor,
+  setCursor,
+  type AgentCursor,
+} from "./agent-cursor";
+
 // Repository
 export {
   clearRepo,
