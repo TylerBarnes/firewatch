@@ -8,6 +8,15 @@ Answer prompts like "check in on the review" or "what's going on with this PR?" 
 
 ## Start with Readable Output
 
+For the current branch's PR, start with:
+
+```bash
+fw agent view-status
+fw agent view-comments
+```
+
+For an explicit PR number, use:
+
 ```bash
 fw view PR_NUMBER
 fw list --pr PR_NUMBER
@@ -22,6 +31,8 @@ Use this when the user asks:
 
 ## What These Commands Tell You
 
+- `fw agent view-status` gives a compact current-branch PR summary with next-step hints.
+- `fw agent view-comments` gives an incremental current-branch comment feed with cursor replay.
 - `fw view <pr>` gives PR-level context: title, state, review state, recent activity, and summary.
 - `fw list --pr <pr>` gives the readable feedback queue for that PR.
 

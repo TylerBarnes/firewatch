@@ -17,6 +17,7 @@ fw list --pr PR_NUMBER
 For the currently checked out branch's PR:
 
 ```bash
+fw agent view-comments
 fw fb --current
 ```
 
@@ -52,10 +53,11 @@ Use this when the user means "unaddressed" rather than strictly "unresolved".
 
 ## Current PR Triage Flow
 
-1. Run `fw fb --current`
-2. If the readable list is enough, work from there
-3. If you need exact filtering, switch to `fw --type comment --pr PR_NUMBER --jsonl | jq ...`
-4. Inspect specific threads with `fw view COMMENT_ID`
+1. Run `fw agent view-comments` to see newly-arrived current-branch comments first
+2. Run `fw fb --current` if you want the full readable list
+3. If the readable list is enough, work from there
+4. If you need exact filtering, switch to `fw --type comment --pr PR_NUMBER --jsonl | jq ...`
+5. Inspect specific threads with `fw view COMMENT_ID`
 
 ## Common Follow-ups
 

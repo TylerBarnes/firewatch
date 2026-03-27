@@ -23,6 +23,7 @@ fw list --pr PR_NUMBER
 For the currently checked out branch's PR:
 
 ```bash
+fw agent view-comments
 fw fb --current
 ```
 
@@ -102,10 +103,11 @@ If you still need to find the thread or determine if it is unresolved, switch to
 
 When replying to several comments on one PR:
 
-1. List the comments with `fw list --pr PR_NUMBER`
-2. Inspect any ambiguous threads with `fw view COMMENT_ID`
-3. Reply one thread at a time with `fw reply`
-4. Add `--resolve` only for completed threads
+1. If you're on the branch, run `fw agent view-comments` to catch newly-arrived comments first
+2. List the comments with `fw list --pr PR_NUMBER` or `fw fb --current`
+3. Inspect any ambiguous threads with `fw view COMMENT_ID`
+4. Reply one thread at a time with `fw reply`
+5. Add `--resolve` only for completed threads
 
 ## Related Patterns
 

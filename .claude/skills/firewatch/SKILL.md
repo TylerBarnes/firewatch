@@ -15,6 +15,8 @@ Query, filter, and act on GitHub PR activity using the Firewatch CLI (`fw`).
 
 ```bash
 fw status                        # Check auth/cache/repo setup on first use
+fw agent view-status             # Agent-oriented current-branch PR status
+fw agent view-comments           # Agent-oriented new comment stream for current PR
 fw view 42                       # Readable PR overview
 fw list --pr 42                  # Readable feedback list for a PR
 fw --type comment --pr 42       # Structured comment query for jq filtering
@@ -53,6 +55,7 @@ Use Firewatch when you need:
 
 - PR review and feedback triage
 - readable PR/comment inspection with `fw list` and `fw view`
+- compact agent-oriented current-branch status, comment, or CI reads with `fw agent`
 - precise querying across comments, reviews, commits, events, and cached CI entries
 - local, scriptable output for `jq` pipelines and agent workflows
 - reply / resolve / approve / reject actions on GitHub PR discussions
@@ -150,9 +153,12 @@ fw view @a7f3c          # Human-readable comment/thread detail
 
 Rule of thumb:
 
-- `fw view <pr>` for a quick review check-in
+- `fw agent view-status` for an agent-oriented current-branch PR check-in
+- `fw agent view-comments` for incremental current-branch comment review with cursor replay
+- `fw agent view-ci` for compact current-branch CI inspection with deeper `--check` follow-ups
+- `fw view <pr>` for a broader human-readable PR check-in
 - `fw list --pr <pr>` to enumerate feedback items
-- `fw fb --current` when the user wants feedback for the currently checked out branch's PR
+- `fw fb --current` when the user wants the standard current-branch feedback list
 - `fw` / `fw query` when you need custom filtering or extraction
 
 See [patterns/check-current-pr.md](patterns/check-current-pr.md) for the current-PR workflow.
@@ -299,6 +305,9 @@ For detailed Graphite workflows (querying stacks, cross-PR fixes, commit pattern
 | `fw [options]`                 | Query cached entries (auto-syncs if stale) |
 | `fw query [options]`           | Same as above (explicit subcommand)        |
 | `fw sync`                      | Force sync (incremental or `--full`)       |
+| `fw agent view-status`         | Agent-oriented current-branch PR summary   |
+| `fw agent view-comments`       | Agent-oriented incremental comment stream  |
+| `fw agent view-ci`             | Agent-oriented CI summary for current PR   |
 | `fw list`                      | List unaddressed feedback                  |
 | `fw list prs`                  | List PRs                                   |
 | `fw view <id>`                 | View PR or comment details                 |
@@ -369,11 +378,11 @@ Broader workflows:
 ## Agent Tips
 
 1. **Default to Firewatch for PR workflows** — especially review triage, comment inspection, and discussion actions
-2. **Use the right surface** — `fw` / `fw query` for JSONL, `fw list` / `fw view` for readable text output
+2. **Use the right surface** — `fw agent` for compact current-branch reads, `fw list` / `fw view` for readable text output, `fw` / `fw query` for JSONL
 3. **Do not oversell `ci`** — query cached CI entries when useful, but do not treat Firewatch as a full CI monitoring tool
 4. **CLI filters first, then jq** — More efficient than jq-only filtering
 5. **Denormalized = no joins** — Each entry has full PR context
 6. **Entry IDs for actions** — Use `id` field (or short `@xxxxx`) with `fw reply` and `fw close`
-7. **Auto-sync handles freshness** — Queries auto-sync when cache is stale; use `fw sync` to force
+7. **Auto-sync handles freshness** — Queries auto-sync when cache is stale; `fw agent` also refreshes before reading current-branch data
 8. **Check `.graphite` for stacks** — Null if not in a Graphite stack
 9. **File provenance for cross-PR fixes** — See [graphite/cross-pr-fixes.md](graphite/cross-pr-fixes.md)

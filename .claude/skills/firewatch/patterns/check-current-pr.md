@@ -8,18 +8,20 @@ Inspect the current branch's PR with readable output first, then drop to structu
 
 ## Preferred Path
 
-Use Firewatch's current-branch feedback targeting when the goal is "show me feedback for the PR I'm on":
+Use Firewatch's agent-oriented current-branch commands when the goal is "show me what's new on the PR I'm on":
 
 ```bash
-fw fb --current
+fw agent view-status
+fw agent view-comments
 ```
 
-This is the simplest current-PR command because it lets Firewatch resolve the branch-to-PR mapping.
+Use `fw fb --current` when you want the standard feedback list for the current branch's PR.
 
 ## Readable Workflow
 
 ```bash
-fw fb --current
+fw agent view-status
+fw agent view-comments
 ```
 
 Use this when the user asks:
@@ -27,6 +29,7 @@ Use this when the user asks:
 - "pull review comments for the current PR"
 - "what feedback is on the PR I'm checked out on?"
 - "show me comments for this branch"
+- "what changed since the last time you checked?"
 
 ## If You Need the PR Number Explicitly
 
@@ -66,13 +69,16 @@ fw --type comment --pr PR_NUMBER | jq 'select(
 
 ## Decision Rule
 
-- Use `fw fb --current` when the goal is "current branch's PR feedback".
+- Use `fw agent view-status` for a compact current-branch summary.
+- Use `fw agent view-comments` for incremental current-branch comment review.
+- Use `fw fb --current` when the goal is the standard current-branch feedback list.
 - Use `fw view <pr>` for a readable PR summary once the PR number is known.
 - Use `fw list --pr <pr>` for readable item-by-item feedback.
 - Use `fw --type comment --pr <pr>` only when the user needs custom filtering or extraction.
 
 ## Notes
 
-- `fw fb --current` depends on being in a git repo with a branch Firewatch can map to a PR.
+- `fw agent view-status`, `fw agent view-comments`, and `fw fb --current` all depend on being in a git repo with a branch Firewatch can map to a PR.
+- `fw agent view-comments` is cursor-backed and is best for "what's new since last check?" workflows; use `--cursor <cursor>` to replay from an older checkpoint.
 - If branch detection fails, fall back to `gh pr view --json number -q '.number'` and then use explicit `--pr` commands.
 - Prefer serialized commands here too; avoid parallel `fw` calls against the same cache.
